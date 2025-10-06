@@ -6,14 +6,14 @@ import (
 	"strings"
 )
 
-type RouteGroup[T any] struct {
-	*Router[T]      // Embedded
+type RouteGroup struct {
+	Router          // Embedded
 	Prefix          string
 	HandlerWrappers []HandlerWrapper // Group Handler Wrappers
 }
 
 // Handle registers a route pattern
-func (g *RouteGroup[T]) Handle(subpattern string, handler http.Handler, handlerWrappers ...HandlerWrapper) {
+func (g *RouteGroup) Handle(subpattern string, handler http.Handler, handlerWrappers ...HandlerWrapper) {
 	var (
 		subPatternParts []string
 		subpath         string
@@ -33,7 +33,7 @@ func (g *RouteGroup[T]) Handle(subpattern string, handler http.Handler, handlerW
 	}
 
 	if strings.Contains(fullPattern, "//") {
-		log.Fatalf("[ERROR] Can't Register Route Pattern %s", fullPattern)
+		log.Fatalf("[ERROR] Can't Register Router Pattern %s", fullPattern)
 	}
 
 	// Wrapping the Handler (Nesting) by the HandlerWrappers into the Actual Handler
@@ -61,10 +61,10 @@ func (g *RouteGroup[T]) Handle(subpattern string, handler http.Handler, handlerW
 		wrappedHandler = g.HandlerWrappers[i].Wrap(wrappedHandler)
 	}
 	// Register the fullPattern with the WrappedHandler
-	g.Router.ServeMux.Handle(fullPattern, wrappedHandler)
+	g.Router.Handle(fullPattern, wrappedHandler)
 }
 
-func (g *RouteGroup[T]) HandleFunc(subpattern string, handleFunc func(http.ResponseWriter, *http.Request), handlerWrappers ...HandlerWrapper) {
+func (g *RouteGroup) HandleFunc(subpattern string, handleFunc func(http.ResponseWriter, *http.Request), handlerWrappers ...HandlerWrapper) {
 	g.Handle(subpattern, http.HandlerFunc(handleFunc), handlerWrappers...)
 }
 
@@ -78,8 +78,8 @@ func (g *RouteGroup[T]) HandleFunc(subpattern string, handleFunc func(http.Respo
 //	    foobaz.Handle("POST bam", foobazbamPostHandler)  // "POST /foo/baz/bam"
 //	  }
 //	}
-func (g *RouteGroup[T]) Group(subPrefix string, batch func(*RouteGroup[T]), handlerWrappers ...HandlerWrapper) *RouteGroup[T] {
-	rg := &RouteGroup[T]{
+func (g *RouteGroup) Group(subPrefix string, batch func(*RouteGroup), handlerWrappers ...HandlerWrapper) *RouteGroup {
+	rg := &RouteGroup{
 		Prefix:          g.Prefix + subPrefix,                          // extended prefix
 		Router:          g.Router,                                      // same router
 		HandlerWrappers: append(g.HandlerWrappers, handlerWrappers...), // handlerwrappers appended
