@@ -6,14 +6,15 @@ import (
 	"strings"
 )
 
-type RouteGroup struct {
+type RouteGroup[T any] struct {
 	Router          // Embedded
+	Env             *T
 	Prefix          string
 	HandlerWrappers []HandlerWrapper // Group Handler Wrappers
 }
 
 // Handle registers a route pattern
-func (g *RouteGroup) Handle(subpattern string, handler http.Handler, handlerWrappers ...HandlerWrapper) {
+func (g *RouteGroup[T]) Handle(subpattern string, handler http.Handler, handlerWrappers ...HandlerWrapper) {
 	var (
 		subPatternParts []string
 		subpath         string
@@ -64,7 +65,7 @@ func (g *RouteGroup) Handle(subpattern string, handler http.Handler, handlerWrap
 	g.Router.Handle(fullPattern, wrappedHandler)
 }
 
-func (g *RouteGroup) HandleFunc(subpattern string, handleFunc func(http.ResponseWriter, *http.Request), handlerWrappers ...HandlerWrapper) {
+func (g *RouteGroup[T]) HandleFunc(subpattern string, handleFunc func(http.ResponseWriter, *http.Request), handlerWrappers ...HandlerWrapper) {
 	g.Handle(subpattern, http.HandlerFunc(handleFunc), handlerWrappers...)
 }
 
@@ -78,10 +79,11 @@ func (g *RouteGroup) HandleFunc(subpattern string, handleFunc func(http.Response
 //	    foobaz.Handle("POST bam", foobazbamPostHandler)  // "POST /foo/baz/bam"
 //	  }
 //	}
-func (g *RouteGroup) Group(subPrefix string, batch func(*RouteGroup), handlerWrappers ...HandlerWrapper) *RouteGroup {
-	rg := &RouteGroup{
-		Prefix:          g.Prefix + subPrefix,                          // extended prefix
+func (g *RouteGroup[T]) Group(subPrefix string, batch func(*RouteGroup[T]), handlerWrappers ...HandlerWrapper) *RouteGroup[T] {
+	rg := &RouteGroup[T]{
 		Router:          g.Router,                                      // same router
+		Env:             g.Env,                                         // same Env
+		Prefix:          g.Prefix + subPrefix,                          // extended prefix
 		HandlerWrappers: append(g.HandlerWrappers, handlerWrappers...), // handlerwrappers appended
 	}
 

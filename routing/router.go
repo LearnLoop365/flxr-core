@@ -27,10 +27,11 @@ func (r *BaseRouter[T]) HandleFunc(pattern string, handleFunc func(http.Response
 }
 
 // Group lets you register routes under a common Prefix + middleware.
-func (r *BaseRouter[T]) Group(prefix string, batch func(*RouteGroup), handlerWrappers ...HandlerWrapper) *RouteGroup {
-	rg := &RouteGroup{
-		Prefix:          prefix,
+func (r *BaseRouter[T]) Group(prefix string, batch func(*RouteGroup[T]), handlerWrappers ...HandlerWrapper) *RouteGroup[T] {
+	rg := &RouteGroup[T]{
 		Router:          r,
+		Env:             r.Env,
+		Prefix:          prefix,
 		HandlerWrappers: handlerWrappers,
 	}
 
