@@ -10,3 +10,12 @@ type ReissueAccessTokenRequestBody struct {
 	RefreshToken string `json:"refresh_token"`
 	UID          int    `json:"uid"` // for Checking
 }
+
+func ExtractBearerToken(header string) string {
+	const prefix = "Bearer "
+	prefixLen := len(prefix)
+	if len(header) > prefixLen && header[:prefixLen] == prefix {
+		return header[prefixLen:]
+	}
+	return ""
+}
