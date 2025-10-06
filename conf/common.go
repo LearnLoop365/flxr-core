@@ -16,12 +16,12 @@ type Common struct {
 	Host         string          `json:"host"` // can be used to generate public url endpoints
 	Context      context.Context `json:"-"`    // [Interface]
 	VolatileKV   *sync.Map       `json:"-"`
-	CommonDBConf CommonDBConf    `json:"-"` // Use separate conf file. Make Custom filed to extend
+	DBConf       CommonDBConf    `json:"-"` // Init manually. e.g. for separate file
 	KVDBClient   kvdb.Client     `json:"-"` // [Interface]
 	MainDBClient sqldb.Client    `json:"-"` // [Interface]
 	HttpClient   *http.Client    `json:"-"`
-	SessionLocks *sync.Map       `json:"-"` // map[string]*sync.Mutex
-	DebugOpts    DebugOpts       `json:"debug_opts"`
+	SessionLocks *sync.Map       `json:"-"`          // map[string]*sync.Mutex
+	DebugOpts    DebugOpts       `json:"debug_opts"` // Do not promote
 }
 
 type CommonDBConf struct {
