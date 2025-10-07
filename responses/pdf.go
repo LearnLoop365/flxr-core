@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func WritePDFBytes(w http.ResponseWriter, filename string, PDFBytes []byte) {
+func WritePDFBytesWithFilename(w http.ResponseWriter, filename string, PDFBytes []byte) {
 	WritePDFResponseHeaders(w, filename)
 	_, err := w.Write(PDFBytes)
 	if err != nil {
