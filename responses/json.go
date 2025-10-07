@@ -8,9 +8,9 @@ import (
 
 // WriteJSONBytes Write Already Encoded JSON Bytes into the Response
 // JSONBytes, err := json.Marshal(payload any)
-func WriteJSONBytes(w http.ResponseWriter, status int, JSONBytes []byte) {
+func WriteJSONBytes(w http.ResponseWriter, HTTPStatusCode int, JSONBytes []byte) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status) // Response Header Sent & Frozen
+	w.WriteHeader(HTTPStatusCode) // Response Header Sent & Frozen
 	if _, err := w.Write(JSONBytes); err != nil {
 		log.Printf("[ERROR] Writing JSON to Response: %v", err)
 	}
@@ -27,11 +27,7 @@ func EncodeWriteJSON(w http.ResponseWriter, HTTPStatusCode int, payload any) {
 
 // WriteSimpleErrorJSON is a helper func same as EncodeWriteJSON
 // but wrapping a string message into a simple Message without app logic code
-func WriteSimpleErrorJSON(
-	w http.ResponseWriter,
-	HTTPStatusCode int,
-	msg string,
-) {
+func WriteSimpleErrorJSON(w http.ResponseWriter, HTTPStatusCode int, msg string) {
 	payload := Message{Type: "error", Message: msg}
 	EncodeWriteJSON(w, HTTPStatusCode, payload)
 }
