@@ -7,7 +7,7 @@ import (
 )
 
 type RouteGroup[T any] struct {
-	Router          // Embedded. [Interface]
+	Router          // [Embedded Interface]
 	Env             *T
 	Prefix          string
 	HandlerWrappers []HandlerWrapper // Group Handler Wrappers
