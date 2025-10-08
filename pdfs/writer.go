@@ -12,7 +12,7 @@ type Writer[T any] interface {
 	ImportPageAsTemplate(filepath string, pageNum int, storeKey string) error
 
 	AddBlankPage()
-	AddTemplatePage(storeKey string) error
+	AddTemplatePage(storeKey string) bool
 
 	SetFont(family string, style string, size float64)
 
