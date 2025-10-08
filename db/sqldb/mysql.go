@@ -20,7 +20,7 @@ type MysqlClient struct {
 
 func (c *MysqlClient) Init() error {
 	var err error
-	c.dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true&loc=%s",
+	c.dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true&loc=%s&multiStatements=true",
 		c.Conf.User,
 		c.Conf.PW,
 		c.Conf.Host,
