@@ -2,9 +2,11 @@ package conf
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"sync"
 
+	"github.com/LearnLoop365/flxr-core/db"
 	"github.com/LearnLoop365/flxr-core/db/kvdb"
 	"github.com/LearnLoop365/flxr-core/db/sqldb"
 )
@@ -22,6 +24,16 @@ type Common struct {
 	HttpClient   *http.Client    `json:"-"`
 	SessionLocks *sync.Map       `json:"-"`          // map[string]*sync.Mutex
 	DebugOpts    DebugOpts       `json:"debug_opts"` // Do not promote
+}
+
+func (e *Common) CleanUp() {
+	log.Println("[INFO] App Resource Cleaning Up...")
+
+	// clean up DB clients
+	db.CloseClient("KVDBClient", e.KVDBClient)
+	db.CloseClient("MainDBClient", e.MainDBClient)
+
+	log.Println("[INFO] App Resource Cleanup Complete")
 }
 
 type CommonDBConf struct {
