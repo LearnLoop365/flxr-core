@@ -54,17 +54,19 @@ type GroupFS struct {
 	FS    embed.FS
 }
 
-func RegisterGroup(registry *[]GroupFS, fs embed.FS, group string) {
-	*registry = append(*registry, GroupFS{
+var rawStoreRegistry []GroupFS
+
+func RegisterGroup(fs embed.FS, group string) {
+	rawStoreRegistry = append(rawStoreRegistry, GroupFS{
 		FS:    fs,
 		Group: group,
 	})
 }
 
-func LoadRawStmtsToStore(registry []GroupFS, store *RawStore, dbtype string, placeholderPrefix byte) error {
+func LoadRawStmtsToStore(store *RawStore, dbtype string, placeholderPrefix byte) error {
 	groupCnt := 0
 	stmtCnt := 0
-	for _, groupFS := range registry {
+	for _, groupFS := range rawStoreRegistry {
 		files, err := groupFS.FS.ReadDir("sql")
 		if err != nil {
 			return fmt.Errorf("failed to read embedded `sql` dir. %w", err)
