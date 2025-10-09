@@ -95,8 +95,8 @@ func LoadRawStmtsForRegisteredBanks(dbtype string, placeholderPrefix byte) error
 				// with Placeholders: `?` (static) and `@` (dynamic)
 				if _, exists := loader.Bank.stmts[name]; !exists {
 					// Convert static placeholders
-					if placeholderPrefix == '?' {
-						// Same as our default, skip
+					if placeholderPrefix == '?' || placeholderPrefix == 0 {
+						// no need to convert
 						loader.Bank.stmts[name] = string(data)
 					} else {
 						loader.Bank.stmts[name] = ConvertStaticPlaceholders(string(data), placeholderPrefix)
@@ -109,6 +109,14 @@ func LoadRawStmtsForRegisteredBanks(dbtype string, placeholderPrefix byte) error
 	}
 	log.Printf("[INFO] %d sql raw stmts loaded for %d models", stmtCnt, modelCnt)
 	return nil
+}
+
+var PlaceholderPrefixForDBType = map[string]byte{
+	"mysql":  '?',
+	"pgsql":  '$',
+	"mssql":  '@',
+	"oracle": ':',
+	"sqlite": 0, // NOTE: sqlite supports all of them
 }
 
 func QueryRows(ctx context.Context, DBHandle *sql.DB, rawStmt string) (*sql.Rows, error) {
