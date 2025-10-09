@@ -6,6 +6,9 @@ import (
 )
 
 func ConvertStaticPlaceholders(sql string, prefix byte) string {
+	if prefix == '?' || prefix == 0 {
+		return sql
+	}
 	var builder strings.Builder
 	builder.Grow(len(sql) + 8) // small padding; rough pre-optimization
 	cnt := 1

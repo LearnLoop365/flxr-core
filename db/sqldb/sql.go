@@ -115,7 +115,7 @@ func LoadRawStmtsToStore(store *RawStore, dbtype string, placeholderPrefix byte)
 		}
 		groupCnt++
 	}
-	log.Printf("[INFO] %d sql raw stmts loaded for %d models", stmtCnt, groupCnt)
+	log.Printf("[INFO] %d sql raw stmts loaded for %d groups", stmtCnt, groupCnt)
 	return nil
 }
 
