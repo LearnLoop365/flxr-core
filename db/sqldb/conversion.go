@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func ConvertPlaceholders(sql string, prefix byte) string {
+func ConvertStaticPlaceholders(sql string, prefix byte) string {
 	var builder strings.Builder
 	builder.Grow(len(sql) + 8) // small padding; rough pre-optimization
 	cnt := 1

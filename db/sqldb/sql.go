@@ -99,7 +99,7 @@ func LoadRawStmtsForRegisteredBanks(dbtype string, placeholderPrefix byte) error
 						// Same as our default, skip
 						loader.Bank.stmts[name] = string(data)
 					} else {
-						loader.Bank.stmts[name] = ConvertPlaceholders(string(data), placeholderPrefix)
+						loader.Bank.stmts[name] = ConvertStaticPlaceholders(string(data), placeholderPrefix)
 					}
 					stmtCnt++
 				}

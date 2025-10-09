@@ -18,3 +18,6 @@ Since MySQL uses `?` for placeholders, no conversion is required.
 ## 2. Dynamic Placeholders
 A dynamic placeholder is a notation used to represent a variable number of placeholders. It uses a single character `@`, which can be converted—via a conversion function—into forms like `?, ?, ..., ?` or `$k, $k+1, ..., $n`, depending on the DBMS.
 
+
+## Prepared Statements
+Since we store raw SQL statements in the banks after conversion for static placeholders only, they can be used as prepared statements if they don't contain dynamic placeholders. 
