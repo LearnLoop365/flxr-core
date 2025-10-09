@@ -2,6 +2,7 @@ package conf
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"net/http"
 	"sync"
@@ -12,19 +13,20 @@ import (
 )
 
 type Common struct {
-	AppName         string          `json:"app_name"`
-	AppRoot         string          `json:"-"` // filled from compiled paths
-	Listen          string          `json:"listen"`
-	Host            string          `json:"host"` // can be used to generate public url endpoints
-	Context         context.Context `json:"-"`
-	VolatileKV      *sync.Map       `json:"-"`
-	DBConf          CommonDBConf    `json:"-"` // Init manually. e.g. for separate file
-	KVDBClient      kvdb.Client     `json:"-"`
-	MainDBClient    sqldb.Client    `json:"-"`
-	SQLRawStmtStore *sqldb.RawStore `json:"-"`
-	HttpClient      *http.Client    `json:"-"`
-	SessionLocks    *sync.Map       `json:"-"`          // map[string]*sync.Mutex
-	DebugOpts       DebugOpts       `json:"debug_opts"` // Do not promote
+	AppName             string               `json:"app_name"`
+	AppRoot             string               `json:"-"` // filled from compiled paths
+	Listen              string               `json:"listen"`
+	Host                string               `json:"host"` // can be used to generate public url endpoints
+	Context             context.Context      `json:"-"`
+	VolatileKV          *sync.Map            `json:"-"`
+	DBConf              CommonDBConf         `json:"-"` // Init manually. e.g. for separate file
+	KVDBClient          kvdb.Client          `json:"-"`
+	MainDBClient        sqldb.Client         `json:"-"`
+	MainDBRawStore      *sqldb.RawStore      `json:"-"`
+	MainDBPreparedStore map[string]*sql.Stmt `json:"-"`
+	HttpClient          *http.Client         `json:"-"`
+	SessionLocks        *sync.Map            `json:"-"`          // map[string]*sync.Mutex
+	DebugOpts           DebugOpts            `json:"debug_opts"` // Do not promote
 }
 
 func (e *Common) CleanUp() {
