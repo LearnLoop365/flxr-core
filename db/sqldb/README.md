@@ -1,10 +1,10 @@
 # Placeholders
 
-## 1. Simple Placeholders
-For simple placeholders, we use `?` and then convert them to each DBMS with conversion function.
+## 1. Static Placeholders
+For static placeholders, we use `?` and then convert them to each DBMS with conversion function.
 
 ### MySQL
-No Conversion Required
+Since MySQL uses `?` for placeholders, no conversion is required.
 
 ### PostgreSQL
 `?` -> `$n` where n = 1, 2, 3, ...

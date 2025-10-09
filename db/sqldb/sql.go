@@ -64,7 +64,7 @@ func RegisterBank(bank *RawStmtBank, fs embed.FS, dir string) {
 
 // LoadRawStmtsForRegisteredBanks registered FS loaders for a given dbtype
 // Call this to preload sql files for models after registering the models with sql files
-func LoadRawStmtsForRegisteredBanks(dbtype string) error {
+func LoadRawStmtsForRegisteredBanks(dbtype string, placeholderPrefix byte) error {
 	modelCnt := 0
 	stmtCnt := 0
 	for _, loader := range BankRegistry {
@@ -87,11 +87,20 @@ func LoadRawStmtsForRegisteredBanks(dbtype string) error {
 
 			switch ext {
 			case dbtype:
+				// exact matching file extension -> use it as-is for dialects
 				loader.Bank.stmts[name] = string(data)
 				stmtCnt++
 			case "sql":
+				// Standard SQL
+				// with Placeholders: `?` (static) and `@` (dynamic)
 				if _, exists := loader.Bank.stmts[name]; !exists {
-					loader.Bank.stmts[name] = string(data)
+					// Convert static placeholders
+					if placeholderPrefix == '?' {
+						// Same as our default, skip
+						loader.Bank.stmts[name] = string(data)
+					} else {
+						loader.Bank.stmts[name] = ConvertPlaceholders(string(data), placeholderPrefix)
+					}
 					stmtCnt++
 				}
 			}
