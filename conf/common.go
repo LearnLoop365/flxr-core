@@ -32,6 +32,18 @@ type Common struct {
 func (e *Common) CleanUp() {
 	log.Println("[INFO] App Resource Cleaning Up...")
 
+	// clean up prepared statements if any
+	if e.MainDBPreparedStore != nil {
+		for k, stmt := range e.MainDBPreparedStore {
+			if stmt != nil {
+				if err := stmt.Close(); err != nil {
+					log.Printf("[ERROR] closing stmt %s: %v\n", k, err)
+				}
+			}
+		}
+		log.Println("[INFO] sql prepared statements closed")
+	}
+
 	// clean up DB clients
 	db.CloseClient("KVDBClient", e.KVDBClient)
 	db.CloseClient("MainDBClient", e.MainDBClient)
