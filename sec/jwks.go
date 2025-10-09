@@ -15,11 +15,11 @@ import (
 	"strings"
 )
 
-// JWK JSON Web Key
+// JWK JSON Web Group
 type JWK struct {
-	Kty string `json:"kty"` // Key Type
+	Kty string `json:"kty"` // Group Type
 	Use string `json:"use"` // Usage
-	Kid string `json:"kid"` // Key ID
+	Kid string `json:"kid"` // Group ID
 	Alg string `json:"alg"` // Algorithm
 	N   string `json:"n"`   // Modulus
 	E   string `json:"e"`   // Exponent
@@ -58,7 +58,7 @@ func NewJWKFromPublicKey(kid string, pub *rsa.PublicKey) JWK {
 	}
 }
 
-// JWKS JSON Web Key Set
+// JWKS JSON Web Group Set
 type JWKS struct {
 	Keys []JWK `json:"keys"`
 }

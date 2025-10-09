@@ -39,7 +39,7 @@ func (c *RedisClient) DBHandle() any { // use with runtime type assertion
 	return c.client
 }
 
-//--- Key Ops ----
+//--- Group Ops ----
 
 func (c *RedisClient) Exists(ctx context.Context, key string) (bool, error) {
 	n, err := c.client.Exists(ctx, key).Result()

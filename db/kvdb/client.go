@@ -9,12 +9,12 @@ import (
 
 type Client interface {
 	db.Client[any] // We locked Client[T] into Client[Any] here
-	// because no concrete type is provided from std for Key-Value DB Handle
+	// because no concrete type is provided from std for Group-Value DB Handle
 	// unlike *sql.DB for SQL DB Handle
 	// so, DBHandle() returns `any` without Static Type Safety
 	// -> Runtime Type Assertion (with overhead)
 
-	//--- Key Ops ----
+	//--- Group Ops ----
 
 	Exists(ctx context.Context, key string) (bool, error)
 	Delete(ctx context.Context, keys ...string) (int64, error)

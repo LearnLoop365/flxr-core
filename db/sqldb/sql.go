@@ -27,87 +27,85 @@ type Conf struct {
 
 type Client = db.Client[*sql.DB]
 
-type RawStmtBank struct {
+type RawStore struct {
 	stmts map[string]string
 }
 
-func (b *RawStmtBank) Get(key string) string {
-	return b.stmts[key]
+type StoreStmtKey struct {
+	Group    string
+	StmtName string
 }
 
-func (b *RawStmtBank) All() map[string]string {
-	return b.stmts
+func (s *RawStore) Set(key StoreStmtKey, rawStmt string) {
+	s.stmts[key.Group+"."+key.StmtName] = rawStmt
 }
 
-type BankRegEntry struct {
-	FS   embed.FS
-	Dir  string
-	Bank *RawStmtBank
+func (s *RawStore) Get(key StoreStmtKey) (string, bool) {
+	stmt, exists := s.stmts[key.Group+"."+key.StmtName]
+	return stmt, exists
 }
 
-var BankRegistry []BankRegEntry
+func (s *RawStore) GetAll() map[string]string {
+	return s.stmts
+}
 
-// RegisterBank a model's embedded FS and map
-func RegisterBank(bank *RawStmtBank, fs embed.FS, dir string) {
-	if bank == nil {
-		panic("bank cannot be nil")
-	}
-	if bank.stmts == nil {
-		bank.stmts = make(map[string]string)
-	}
-	BankRegistry = append(BankRegistry, BankRegEntry{
-		FS:   fs,
-		Dir:  dir,
-		Bank: bank,
+type GroupFS struct {
+	Group string
+	FS    embed.FS
+}
+
+func RegisterGroup(registry *[]GroupFS, fs embed.FS, group string) {
+	*registry = append(*registry, GroupFS{
+		FS:    fs,
+		Group: group,
 	})
 }
 
-// LoadRawStmtsForRegisteredBanks registered FS loaders for a given dbtype
-// Call this to preload sql files for models after registering the models with sql files
-func LoadRawStmtsForRegisteredBanks(dbtype string, placeholderPrefix byte) error {
-	modelCnt := 0
+func LoadRawStmtsToStore(registry []GroupFS, store *RawStore, dbtype string, placeholderPrefix byte) error {
+	groupCnt := 0
 	stmtCnt := 0
-	for _, loader := range BankRegistry {
-		entries, err := loader.FS.ReadDir(loader.Dir)
+	for _, groupFS := range registry {
+		files, err := groupFS.FS.ReadDir("sql")
 		if err != nil {
-			return fmt.Errorf("failed to read embedded dir: %s. %w", loader.Dir, err)
+			return fmt.Errorf("failed to read embedded `sql` dir. %w", err)
 		}
-		for _, entry := range entries {
-			if entry.IsDir() {
+		for _, f := range files {
+			if f.IsDir() {
 				continue
 			}
-			filename := entry.Name()
+			filename := f.Name()
 			ext := filepath.Ext(filename)
 			name := strings.TrimSuffix(filename, ext)
 			ext = strings.TrimPrefix(ext, ".")
-			data, err := loader.FS.ReadFile(filepath.Join(loader.Dir, filename))
+			data, err := groupFS.FS.ReadFile(filepath.Join("sql", filename))
 			if err != nil {
 				return fmt.Errorf("failed to read %s: %w", filename, err)
 			}
+			stmtKey := StoreStmtKey{Group: groupFS.Group, StmtName: name}
 
 			switch ext {
 			case dbtype:
 				// exact matching file extension -> use it as-is for dialects
-				loader.Bank.stmts[name] = string(data)
+				store.Set(stmtKey, string(data))
 				stmtCnt++
 			case "sql":
 				// Standard SQL
 				// with Placeholders: `?` (static) and `@` (dynamic)
-				if _, exists := loader.Bank.stmts[name]; !exists {
+				if _, exists := store.Get(stmtKey); !exists {
 					// Convert static placeholders
 					if placeholderPrefix == '?' || placeholderPrefix == 0 {
 						// no need to convert
-						loader.Bank.stmts[name] = string(data)
+						store.Set(stmtKey, string(data))
 					} else {
-						loader.Bank.stmts[name] = ConvertStaticPlaceholders(string(data), placeholderPrefix)
+						store.Set(stmtKey, ConvertStaticPlaceholders(string(data), placeholderPrefix))
 					}
 					stmtCnt++
 				}
 			}
 		}
-		modelCnt++
+		groupCnt++
 	}
-	log.Printf("[INFO] %d sql raw stmts loaded for %d models", stmtCnt, modelCnt)
+	log.Printf("[INFO] %d sql raw stmts loaded for %d models", stmtCnt, groupCnt)
 	return nil
 }
 
@@ -119,6 +117,8 @@ var PlaceholderPrefixForDBType = map[string]byte{
 	"sqlite": 0, // NOTE: sqlite supports all of them
 }
 
+// QueryRows currently using PREPARE statement
+// ToDo: make it an option
 func QueryRows(ctx context.Context, DBHandle *sql.DB, rawStmt string) (*sql.Rows, error) {
 	stmt, err := DBHandle.PrepareContext(ctx, rawStmt) // Using PREPARE Statement
 	if err != nil {
@@ -156,10 +156,10 @@ func RowsToItems[T any](
 func QueryAllItems[T any](
 	ctx context.Context,
 	DBHandle *sql.DB,
-	rawStmtBank RawStmtBank,
+	rawStmt string,
 	fieldPtrsFromItem func(*T) []any,
 ) ([]T, error) {
-	rows, err := QueryRows(ctx, DBHandle, rawStmtBank.Get("findall"))
+	rows, err := QueryRows(ctx, DBHandle, rawStmt)
 	if err != nil {
 		return nil, err
 	}
@@ -168,20 +168,15 @@ func QueryAllItems[T any](
 
 func QueryAllItemsResponse[T any](
 	DBHandle *sql.DB,
-	rawStmtBank RawStmtBank,
+	rawStmt string,
 	fieldPtrsFromItem func(*T) []any,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		items, err := QueryAllItems[T](r.Context(), DBHandle, rawStmtBank, fieldPtrsFromItem)
+		items, err := QueryAllItems[T](r.Context(), DBHandle, rawStmt, fieldPtrsFromItem)
 		if err != nil {
 			responses.WriteSimpleErrorJSON(w, http.StatusInternalServerError, fmt.Sprintf("[ERROR] SQL failed to query items. %v", err))
 			return
 		}
 		responses.EncodeWriteJSON(w, http.StatusOK, items)
 	}
-}
-
-type PrepareSource struct {
-	Bank *RawStmtBank
-	Name string
 }
