@@ -31,11 +31,6 @@ type RawStore struct {
 	stmts map[string]string
 }
 
-type StoreStmtKey struct {
-	Group    string
-	StmtName string
-}
-
 func NewRawStore() *RawStore {
 	return &RawStore{stmts: make(map[string]string)}
 }
@@ -51,6 +46,15 @@ func (s *RawStore) Get(key StoreStmtKey) (string, bool) {
 
 func (s *RawStore) GetAll() map[string]string {
 	return s.stmts
+}
+
+type StoreStmtKey struct {
+	Group    string
+	StmtName string
+}
+
+func (k StoreStmtKey) String() string {
+	return k.Group + "." + k.StmtName
 }
 
 type GroupFS struct {
