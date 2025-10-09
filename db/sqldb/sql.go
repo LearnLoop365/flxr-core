@@ -36,6 +36,10 @@ type StoreStmtKey struct {
 	StmtName string
 }
 
+func NewRawStore() *RawStore {
+	return &RawStore{stmts: make(map[string]string)}
+}
+
 func (s *RawStore) Set(key StoreStmtKey, rawStmt string) {
 	s.stmts[key.Group+"."+key.StmtName] = rawStmt
 }
