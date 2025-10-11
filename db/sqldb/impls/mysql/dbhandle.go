@@ -18,12 +18,27 @@ type DBHandle struct {
 // Ensure mysql.DBHandle implements sqldb.DBHandle interface
 var _ sqldb.DBHandle = (*DBHandle)(nil)
 
-func (h *DBHandle) QueryRows(ctx context.Context, query string, args ...any) (sqldb.Rows, error) {
-	return h.db.QueryContext(ctx, query, args...)
+func (h *DBHandle) Exec(ctx context.Context, query string, args ...any) (sqldb.Result, error) {
+	result, err := h.db.ExecContext(ctx, query, args...)
+	// NOTE: We can process a DBMS-specific error to produce a better abstracted error
+	if err != nil {
+		return nil, err
+	}
+	return &Result{result: result}, nil
 }
 
-func (h *DBHandle) Exec(ctx context.Context, query string, args ...any) (sqldb.Result, error) {
-	return h.db.ExecContext(ctx, query, args...)
+func (h *DBHandle) QueryRows(ctx context.Context, query string, args ...any) (sqldb.Rows, error) {
+	rows, err := h.db.QueryContext(ctx, query, args...)
+	// NOTE: We can process a DBMS-specific error to produce a better abstracted error
+	if err != nil {
+		return nil, err
+	}
+	return &Rows{rows: rows}, nil
+}
+
+func (h *DBHandle) QueryRow(ctx context.Context, query string, args ...any) sqldb.Row {
+	row := h.db.QueryRowContext(ctx, query, args...)
+	return &Row{row: row}
 }
 
 // CopyFrom - params: table, columns, rows
@@ -43,21 +58,19 @@ func (h *DBHandle) InsertStmt(ctx context.Context, query string, args ...any) (s
 	if !strings.HasPrefix(strings.ToUpper(trimmed), "INSERT") {
 		return nil, fmt.Errorf("InsertStmt must start with INSERT")
 	}
-	res, err := h.db.ExecContext(ctx, query, args...)
+	result, err := h.db.ExecContext(ctx, query, args...)
+	// NOTE: We can process a DBMS-specific error to produce a better abstracted error
 	if err != nil {
 		return nil, err
 	}
-	return res, nil // sql.Result implements sqldb.Result
+	return &Result{result: result}, nil
 }
 
 func (h *DBHandle) Prepare(ctx context.Context, query string) (sqldb.PreparedStmt, error) {
 	stmt, err := h.db.PrepareContext(ctx, query)
+	// NOTE: We can process a DBMS-specific error to produce a better abstracted error
 	if err != nil {
 		return nil, err
 	}
 	return &PreparedStmt{stmt: stmt}, nil
-}
-
-func (h *DBHandle) QueryRow(ctx context.Context, query string, args ...any) sqldb.Row {
-	return h.db.QueryRowContext(ctx, query, args...)
 }

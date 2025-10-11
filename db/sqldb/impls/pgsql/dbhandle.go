@@ -18,8 +18,18 @@ type DBHandle struct {
 
 var _ sqldb.DBHandle = (*DBHandle)(nil)
 
+func (h *DBHandle) Exec(ctx context.Context, query string, args ...any) (sqldb.Result, error) {
+	tag, err := h.pool.Exec(ctx, query, args...)
+	// NOTE: We can process a DBMS-specific error to produce a better abstracted error
+	if err != nil {
+		return nil, err
+	}
+	return &Result{tag: tag}, nil
+}
+
 func (h *DBHandle) QueryRows(ctx context.Context, query string, args ...any) (sqldb.Rows, error) {
 	rows, err := h.pool.Query(ctx, query, args...)
+	// NOTE: We can process a DBMS-specific error to produce a better abstracted error
 	if err != nil {
 		return nil, err
 	}
@@ -30,22 +40,21 @@ func (h *DBHandle) QueryRows(ctx context.Context, query string, args ...any) (sq
 	}, nil
 }
 
-func (h *DBHandle) Exec(ctx context.Context, query string, args ...any) (sqldb.Result, error) {
-	tag, err := h.pool.Exec(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	return &Result{tag: tag}, nil
+func (h *DBHandle) QueryRow(ctx context.Context, query string, args ...any) sqldb.Row {
+	row := h.pool.QueryRow(ctx, query, args...)
+	return &Row{row: row}
 }
 
 func (h *DBHandle) CopyFrom(ctx context.Context, table string, columns []string, rows [][]any) (int64, error) {
 	src := pgx.CopyFromRows(rows)
 	count, err := h.pool.CopyFrom(ctx, pgx.Identifier{table}, columns, src)
+	// NOTE: We can process a DBMS-specific error to produce a better abstracted error
 	return count, err
 }
 
 func (h *DBHandle) Listen(ctx context.Context, channel string) (<-chan sqldb.Notification, error) {
 	conn, err := h.pool.Acquire(ctx)
+	// NOTE: We can process a DBMS-specific error to produce a better abstracted error
 	if err != nil {
 		return nil, err
 	}
@@ -99,25 +108,21 @@ func (h *DBHandle) InsertStmt(ctx context.Context, query string, args ...any) (s
 	}
 
 	tag, err := h.pool.Exec(ctx, query, args...)
+	// NOTE: We can process a DBMS-specific error to produce a better abstracted error
 	return &Result{tag: tag}, err
 }
 
 func (h *DBHandle) Prepare(ctx context.Context, query string) (sqldb.PreparedStmt, error) {
 	conn, err := h.pool.Acquire(ctx)
+	// NOTE: We can process a DBMS-specific error to produce a better abstracted error
 	if err != nil {
 		return nil, err
 	}
-
 	stmtName := fmt.Sprintf("stmt_%x", time.Now().UnixNano())
 	_, err = conn.Conn().Prepare(ctx, stmtName, query)
 	if err != nil {
 		conn.Release()
 		return nil, err
 	}
-
 	return &PreparedStmt{conn: conn, stmtName: stmtName}, nil
-}
-
-func (h *DBHandle) QueryRow(ctx context.Context, query string, args ...any) sqldb.Row {
-	return h.pool.QueryRow(ctx, query, args...)
 }
