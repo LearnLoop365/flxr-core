@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/LearnLoop365/flxr-core/db/sqldb"
 	"github.com/jackc/pgx/v5"
@@ -17,7 +18,7 @@ type DBHandle struct {
 
 var _ sqldb.DBHandle = (*DBHandle)(nil)
 
-func (h *DBHandle) Query(ctx context.Context, query string, args ...any) (sqldb.Rows, error) {
+func (h *DBHandle) QueryRows(ctx context.Context, query string, args ...any) (sqldb.Rows, error) {
 	rows, err := h.pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -99,4 +100,24 @@ func (h *DBHandle) InsertStmt(ctx context.Context, query string, args ...any) (s
 
 	tag, err := h.pool.Exec(ctx, query, args...)
 	return &Result{tag: tag}, err
+}
+
+func (h *DBHandle) Prepare(ctx context.Context, query string) (sqldb.PreparedStmt, error) {
+	conn, err := h.pool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	stmtName := fmt.Sprintf("stmt_%x", time.Now().UnixNano())
+	_, err = conn.Conn().Prepare(ctx, stmtName, query)
+	if err != nil {
+		conn.Release()
+		return nil, err
+	}
+
+	return &PreparedStmt{conn: conn, stmtName: stmtName}, nil
+}
+
+func (h *DBHandle) QueryRow(ctx context.Context, query string, args ...any) sqldb.Row {
+	return h.pool.QueryRow(ctx, query, args...)
 }

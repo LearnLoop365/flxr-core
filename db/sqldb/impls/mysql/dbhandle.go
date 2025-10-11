@@ -18,7 +18,7 @@ type DBHandle struct {
 // Ensure mysql.DBHandle implements sqldb.DBHandle interface
 var _ sqldb.DBHandle = (*DBHandle)(nil)
 
-func (h *DBHandle) Query(ctx context.Context, query string, args ...any) (sqldb.Rows, error) {
+func (h *DBHandle) QueryRows(ctx context.Context, query string, args ...any) (sqldb.Rows, error) {
 	return h.db.QueryContext(ctx, query, args...)
 }
 
@@ -48,4 +48,16 @@ func (h *DBHandle) InsertStmt(ctx context.Context, query string, args ...any) (s
 		return nil, err
 	}
 	return res, nil // sql.Result implements sqldb.Result
+}
+
+func (h *DBHandle) Prepare(ctx context.Context, query string) (sqldb.PreparedStmt, error) {
+	stmt, err := h.db.PrepareContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	return &PreparedStmt{stmt: stmt}, nil
+}
+
+func (h *DBHandle) QueryRow(ctx context.Context, query string, args ...any) sqldb.Row {
+	return h.db.QueryRowContext(ctx, query, args...)
 }
