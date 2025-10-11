@@ -16,12 +16,12 @@ func NewRawStore() *RawStore {
 	return &RawStore{stmts: make(map[string]string)}
 }
 
-func (s *RawStore) Set(key StoreStmtKey, rawStmt string) {
-	s.stmts[key.Group+"."+key.StmtName] = rawStmt
+func (s *RawStore) Set(key string, rawStmt string) {
+	s.stmts[key] = rawStmt
 }
 
-func (s *RawStore) Get(key StoreStmtKey) (string, bool) {
-	stmt, exists := s.stmts[key.Group+"."+key.StmtName]
+func (s *RawStore) Get(key string) (string, bool) {
+	stmt, exists := s.stmts[key]
 	return stmt, exists
 }
 
@@ -29,12 +29,12 @@ func (s *RawStore) GetAll() map[string]string {
 	return s.stmts
 }
 
-type StoreStmtKey struct {
+type StoreGroupedStmtKey struct {
 	Group    string
 	StmtName string
 }
 
-func (k StoreStmtKey) String() string {
+func (k StoreGroupedStmtKey) String() string {
 	return k.Group + "." + k.StmtName
 }
 
@@ -72,23 +72,23 @@ func LoadRawStmtsToStore(store *RawStore, dbtype string, placeholderPrefix byte)
 			if err != nil {
 				return fmt.Errorf("failed to read %s: %w", filename, err)
 			}
-			stmtKey := StoreStmtKey{Group: groupFS.Group, StmtName: name}
+			groupedStmtKey := StoreGroupedStmtKey{Group: groupFS.Group, StmtName: name}.String()
 
 			switch ext {
 			case dbtype:
 				// exact matching file extension -> use it as-is for dialects
-				store.Set(stmtKey, string(data))
+				store.Set(groupedStmtKey, string(data))
 				stmtCnt++
 			case "sql":
 				// Standard SQL
 				// with Placeholders: `?` (static) and `@` (dynamic)
-				if _, exists := store.Get(stmtKey); !exists {
+				if _, exists := store.Get(groupedStmtKey); !exists {
 					// Convert static placeholders
 					if placeholderPrefix == '?' || placeholderPrefix == 0 {
 						// no need to convert
-						store.Set(stmtKey, string(data))
+						store.Set(groupedStmtKey, string(data))
 					} else {
-						store.Set(stmtKey, ConvertStaticPlaceholders(string(data), placeholderPrefix))
+						store.Set(groupedStmtKey, ConvertStaticPlaceholders(string(data), placeholderPrefix))
 					}
 					stmtCnt++
 				}
