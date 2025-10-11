@@ -24,10 +24,20 @@ func (t *Tx) Rollback(ctx context.Context) error {
 
 func (t *Tx) Exec(ctx context.Context, query string, args ...any) (sqldb.Result, error) {
 	tag, err := t.tx.Exec(ctx, query, args...)
-	return tag, err
+	if err != nil {
+		return nil, err
+	}
+	return &Result{tag: tag}, nil
 }
 
 func (t *Tx) Query(ctx context.Context, query string, args ...any) (sqldb.Rows, error) {
 	rows, err := t.tx.Query(ctx, query, args...)
-	return rows, err
+	if err != nil {
+		return nil, err
+	}
+	return &Rows{
+		conn:    nil, // tx already owns the connection
+		current: rows,
+		batch:   nil,
+	}, nil
 }
