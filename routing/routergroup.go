@@ -13,6 +13,9 @@ type RouteGroup[T any] struct {
 	HandlerWrappers []HandlerWrapper // Group Handler Wrappers
 }
 
+// Ensure RouteGroup[any] implements Router
+var _ Router = (*RouteGroup[any])(nil)
+
 // Handle registers a route pattern
 func (g *RouteGroup[T]) Handle(subpattern string, handler http.Handler, handlerWrappers ...HandlerWrapper) {
 	var (

@@ -1,0 +1,51 @@
+package mysql
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"strings"
+
+	"github.com/LearnLoop365/flxr-core/db/sqldb"
+)
+
+type DBHandle struct {
+	// sqldb.DBHandle // [Interface]
+
+	db *sql.DB
+}
+
+// Ensure mysql.DBHandle implements sqldb.DBHandle interface
+var _ sqldb.DBHandle = (*DBHandle)(nil)
+
+func (h *DBHandle) Query(ctx context.Context, query string, args ...any) (sqldb.Rows, error) {
+	return h.db.QueryContext(ctx, query, args...)
+}
+
+func (h *DBHandle) Exec(ctx context.Context, query string, args ...any) (sqldb.Result, error) {
+	return h.db.ExecContext(ctx, query, args...)
+}
+
+// CopyFrom - params: table, columns, rows
+func (h *DBHandle) CopyFrom(_ context.Context, _ string, _ []string, _ [][]any) (int64, error) {
+	// MySQL doesn't have native COPY
+	// ToDo: emulate batch insert
+	return 0, fmt.Errorf("method `CopyFrom` not supported for MySQL")
+}
+
+// Listen - param: channel
+func (h *DBHandle) Listen(_ context.Context, _ string) (<-chan sqldb.Notification, error) {
+	return nil, fmt.Errorf("method `Listen` not supported for MySQL")
+}
+
+func (h *DBHandle) InsertStmt(ctx context.Context, query string, args ...any) (sqldb.Result, error) {
+	trimmed := strings.TrimSpace(query)
+	if !strings.HasPrefix(strings.ToUpper(trimmed), "INSERT") {
+		return nil, fmt.Errorf("InsertStmt must start with INSERT")
+	}
+	res, err := h.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil // sql.Result implements sqldb.Result
+}

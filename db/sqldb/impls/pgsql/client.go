@@ -1,4 +1,4 @@
-package sqldb
+package pgsql
 
 import (
 	"database/sql"
@@ -6,19 +6,20 @@ import (
 	"log"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib" // pgx stdlib driver for database/sql
+	"github.com/LearnLoop365/flxr-core/db/sqldb"
 )
 
-// PgsqlClient implements SQLDBClient
-type PgsqlClient struct {
-	Conf *Conf
+type Client struct {
+	//sqldb.Client // [Embedded Interface]
+
+	Conf *sqldb.Conf
 
 	// internal fields are implementation details, not exported
 	db  *sql.DB
 	dsn string
 }
 
-func (c *PgsqlClient) Init() error {
+func (c *Client) Init() error {
 	var err error
 
 	// DSN format for pgx (URL or key/value style)
@@ -42,27 +43,24 @@ func (c *PgsqlClient) Init() error {
 	if err != nil {
 		return err
 	}
-
 	// connection settings
 	c.db.SetConnMaxLifetime(3 * time.Minute)
 	c.db.SetMaxOpenConns(10)
 	c.db.SetMaxIdleConns(10)
-
 	if err = c.db.Ping(); err != nil {
 		return fmt.Errorf("postgres ping failed: %w", err)
 	}
-
 	log.Println("[INFO] pgsql client initialized")
 	return nil
 }
 
-func (c *PgsqlClient) Close() error {
+func (c *Client) Close() error {
 	if c.db == nil {
 		return nil
 	}
 	return c.db.Close()
 }
 
-func (c *PgsqlClient) DBHandle() *sql.DB {
+func (c *Client) DBHandle() *sql.DB {
 	return c.db
 }
